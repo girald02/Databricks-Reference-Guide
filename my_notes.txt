@@ -1,0 +1,162 @@
+Databricks file system  = DBFS
+- Distributed file system
+It will get the URL from delta lake to connect
+
+Then it have an abstraction layer - we can use file simantics for example /FileStore/raw.file.csv
+
+============================
+HARDCODE
+Accessing Databricks to Data Lake
+> Mounting 
+> Service Principle - Application which kind of have access to read the datalake data
+> Entra ID - App Registration -> Storage Data Contributor
+- Application_ID
+- Tenant_ID
+Certificate and Secret 
+> value
+
+============================
+Databricks utilities
+dbutils.fs() - file checker
+dbutils.fs.ls("abfss://source@storageaccoutname.dfs.core.windows.net/");
+============================
+Can use it by parameters example code:
+dbutils.widgets().text("p_name" , "girald");
+dbutils.widgets().get("p_name");
+============================
+
+HARCODE BUT SECURED 
+
+
+dbutils().secret
+
+In azure using keyvault - it will store the value of our secret_id 
+
+Step by step
+CREATING OF KEY VAULT
+Go to Azure Portal -> Key Vault -> Pick The resource Group -> create an keyvault Name -> Check the Access Configuration - > Permission Model select - > VAault Access policy -> Create
+
+TO CREATE AN SECRET_ID 
+Goto Access Control IAM -> Add role -> "Key Vault Administrator" -> Select your email id
+
+TO STORE THE SECRET_ID TO KEYVAULE
+Under Keyvault -> Goto Object -> Secret - > Create one -> provide name - > secret value -> "We store our secret"
+
+Now we need to connect the Keyvault secret on secret scorpe in data bricks?
+Goto databricks resource , and get the URL
+
+Then after copying the URL add
+URL + #secrets/createScope/
+
+Name:
+giraldScope
+
+Manage Principle?
+Creator
+
+Azure Key Vault
+DNS Name: ?  -> Go to resource key vault -> select key -> goto properties -> Get the vault URL ->
+
+Resource ID ? -> Same with the resource ID
+
+
+dbutils.secret.list(scope = 'giraldscope');
+
+dbutils.secret.get(scope = 'giraldscope' , key= 'app-secret');
+============================
+
+Data Reading:
+
+df_sales = spark.read.format('csv')\
+		  .option('header' , True)\
+		  .option('inferSchema' , True)\
+		  .load('abfss//:source@storagenameacccount.dfs.core.windows.net/')
+============================
+pyspark transformation: need to import a libraris
+
+from pyspark.sql.functions import *;
+from pyspark.sql.types import *;
+
+
+Spliting transformation:
+df_sales.withColumn('testdata' , split(col('testcolumn') , " ")).display()
+
+
+ADD CONSTANT IN PENTAHO:
+df_sales.withColumm('testdata' , lit(var)) asssigning value into the column whenver what it's  "parang add constants"
+
+SELECT VALUE AND CHANGE META DATA TYPES IN PENTAHO
+df_sales.withColumm('testdata' , col('testdata'.cast(StringType())).display()
+
+
+
+============================
+Delta Lake - is a file format that contains transactional logs. 
+.crc
+.json - all the transaction can view this
+
+%run will inherit all the runs syntax on the current run - it like session
+
+%run "/foldernameofworkspace/filenameofnotedbook"
+
+
+USE CATALOG hive_metastore;
+
+
+df_sales.write.fomat('delta')\
+   			  .mode('append')\
+			  .option('path' , 'abfss//foldername@storagename.dfs.core.windows.net/')\
+			  .save()
+
+
+
+
+PART 2:
+
+DELTA LAKE:
+
+DATABASE VERSIONING 
+DESCRIBE HISTORY table_name
+
+DATABASE TIME TRAVEL
+RESTART TABLE table_name TO VERSION AS OF 1 - [1] is an index 
+
+
+DATABASE VACCUM  - path of where its save the external table (Delta Lake)
+VACUUM table_name;
+
+DATABASE TIME TRAVEL
+RESTART TABLE table_name TO VERSION AS OF 1 - [1] is an index 
+
+DATABASE VACCUM  - it wil ldelete unnessary fiels by default of 7days old
+VACUUM table_name; 
+
+DATABASE OPTIMIZE:
+OPTIMIZE table_name
+
+DATABASE ZORDER BY 
+
+OPTIMIZE table_name ZORDER BY (id)
+
+
+DATABASE AUTOLOADER
+Streaming dataframe:
+
+df = spark.readStream.format('cloudFiles')\
+        .option('cloudFiles.format','parquet')\
+        .option('cloudFiles.schemaLocation','abfss://aldestination@datalakeansh.dfs.core.windows.net/checkpoint')\
+        .load('abfss://alsource@datalakeansh.dfs.core.windows.net')   
+
+df.writeStream.format('delta')\
+               .option('checkpointLocation','abfss://aldestination@datalakeansh.dfs.core.windows.net/checkpoint')\
+               .option('mergeSchema','true')\
+               .trigger(processingTime='5 seconds')\
+               .start('abfss://aldestination@datalakeansh.dfs.core.windows.net/data')
+
+
+.trigger default tiem = 0.5 seconds:
+
+
+Last session will be 
+Workflows
+Create a new job :>
